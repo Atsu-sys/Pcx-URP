@@ -1,0 +1,15 @@
+﻿{
+    "name": "PcxURP",
+    "rootNamespace": "Pcx",
+    "references": [
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": []
+}

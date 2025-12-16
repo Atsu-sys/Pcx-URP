@@ -1,0 +1,15 @@
+{
+    "author": "Atsu-sys (based on Keijiro Takahashi's Pcx)",
+    "dependencies": {
+        "com.unity.render-pipelines.universal": "17.0.0"
+    },
+    "description": "Point cloud importer & renderer for URP",
+    "displayName": "PCX for URP",
+    "keywords": [ "unity", "urp", "point-cloud" ],
+    "license": "UNLICENSED",
+    "name": "com.atsusys.pcx-urp",
+    "repository": "github:Atsu-sys/Pcx-URP",
+    "unity": "6000.0",
+    "unityRelease": "0f1",
+    "version": "1.0.0"
+}

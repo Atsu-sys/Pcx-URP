@@ -1,139 +1,84 @@
-Pcx - Point Cloud Importer/Renderer for Unity
-=============================================
+PCX for URP - Point Cloud Importer/Renderer for Unity
+======================================================
 
 ![GIF](https://i.imgur.com/zc6P96x.gif)
 ![GIF](https://i.imgur.com/lpWIiXu.gif)
 
-**Pcx** is a custom importer and renderer that allows for handling point cloud data
-in Unity.
+**PCX for URP** is a custom importer and renderer that allows for handling point cloud data
+in Unity with **Universal Render Pipeline (URP)** support.
 
-System Requirements
--------------------
+> **Note**: This is a fork of [keijiro/Pcx](https://github.com/keijiro/Pcx), modified for URP compatibility.
 
-- Unity 2019.4
+## System Requirements
 
-Supported Formats
------------------
+- Unity 6 (6000.0 or later)
+- Universal Render Pipeline (URP) 17.0.0 or later
 
-Currently Pcx only supports PLY binary little-endian format.
+## How To Install / インストール方法
 
-How To Install
---------------
+### Option 1: Install via Git URL (推奨)
 
-The Pcx package uses the [scoped registry] feature to import dependent
-packages. Please add the following sections to the package manifest file
-(`Packages/manifest.json`).
-
-To the `scopedRegistries` section:
+1. Unity エディタで **Window > Package Manager** を開く
+2. 左上の **+** ボタンをクリック
+3. **Add package from git URL...** を選択
+4. 以下のURLを入力して **Add** をクリック:
 
 ```
+https://github.com/Atsu-sys/Pcx-URP.git?path=Packages/com.atsusys.pcx-urp
+```
+
+> **Note**: 特定のバージョンを指定する場合は、末尾に `#v1.0.0` のようにタグを追加できます。
+
+### Option 2: manifest.json を直接編集
+
+`Packages/manifest.json` を開き、`dependencies` に以下を追加:
+
+```json
 {
-  "name": "Keijiro",
-  "url": "https://registry.npmjs.com",
-  "scopes": [ "jp.keijiro" ]
+  "dependencies": {
+    "com.atsusys.pcx-urp": "https://github.com/Atsu-sys/Pcx-URP.git?path=Packages/com.atsusys.pcx-urp",
+    ...
+  }
 }
 ```
 
-To the `dependencies` section:
+### Option 3: ローカルにクローンして追加
 
-```
-"jp.keijiro.pcx": "1.0.1"
-```
+1. このリポジトリをクローン
+2. Package Manager で **Add package from disk...** をクリック
+3. `Packages/com.atsusys.pcx-urp/package.json` を選択
 
-After changes, the manifest file should look like below:
+## Quick Start / クイックスタート
 
-```
-{
-  "scopedRegistries": [
-    {
-      "name": "Keijiro",
-      "url": "https://registry.npmjs.com",
-      "scopes": [ "jp.keijiro" ]
-    }
-  ],
-  "dependencies": {
-    "jp.keijiro.pcx": "1.0.1",
-    ...
-```
+### 方法1: Mesh + MeshRenderer（シンプル）
 
-[scoped registry]: https://docs.unity3d.com/Manual/upm-scoped.html
+1. `.ply` ファイルをプロジェクトにインポート（Container Type: `Mesh`）
+2. GameObjectに **Mesh Filter** と **Mesh Renderer** を追加
+3. マテリアルに `Point Cloud/Point URP` または `Point Cloud/Disk URP` を使用
 
-Container Types
----------------
+### 方法2: PointCloudRenderer（ComputeBuffer）
 
-![Inspector](https://i.imgur.com/Da0p6uV.png)
+1. `.ply` ファイルをインポート（Container Type: `Compute Buffer`）
+2. GameObjectに **Point Cloud Renderer** コンポーネントを追加
+3. **Source Data** に PointCloudData アセットを設定
 
-There are three types of container for point clouds.
+> 詳細は [パッケージREADME](Packages/com.atsusys.pcx-urp/README.md) を参照
 
-### Mesh
+## Documentation
 
-Points are to be contained in a `Mesh` object. They can be rendered with the
-standard `MeshRenderer` component. It's recommended to use the custom shaders
-included in Pcx (`Point Cloud/Point` and `Point Cloud/Disk`).
+See the [package README](Packages/com.atsusys.pcx-urp/README.md) for detailed usage instructions.
 
-### ComputeBuffer
 
-Points are to be contained in a `PointCloudData` object, which uses
-`ComputeBuffer` to store point data. It can be rendered with using the
-`PointCloudRenderer` component.
+## Changes from Original
 
-### Texture
+- **URP Support**: All shaders converted to Universal Render Pipeline
+- **Unity 6 Compatible**: Updated minimum Unity version to 6000.0
+- **Package Renamed**: Changed from `jp.keijiro.pcx` to `com.atsusys.pcx-urp`
 
-Points are baked into `Texture2D` objects that can be used as attribute maps
-in [Visual Effect Graph].
+## Acknowledgements
 
-[Visual Effect Graph]: https://unity.com/visual-effect-graph
+This package is based on [Pcx](https://github.com/keijiro/Pcx) by Keijiro Takahashi.
 
-Rendering Methods
------------------
+## License
 
-There are two types of rendering methods in Pcx.
-
-### Point (point primitives)
-
-Points are rendered as point primitives when using the `Point Cloud/Point`
-shader.
-
-![Points](https://i.imgur.com/aY4QMtb.png)
-![Points](https://i.imgur.com/jJAhLI2.png)
-
-The size of points can be adjusted by changing the material properties.
-
-![Inspector](https://i.imgur.com/gEMmxTH.png)
-
-These size properties are only supported on some platforms; It may work with
-OpenGLCore and Metal, but never work with D3D11/12.
-
-This method is also used when the point size is set to zero in
-`PointCloudRenderer`.
-
-### Disk (geometry shader)
-
-Points are rendered as small disks when using the `Point Cloud/Disk` shader or
-`PointCloudRenderer`.
-
-![Disks](https://i.imgur.com/fcq5E3m.png)
-
-This method requires geometry shader support.
-
-Acknowledgements
-----------------
-
-The point cloud files used in the examples of Pcx are created by authors listed
-below. These files are licensed under the Creative Commons Attribution license
-([CC BY 4.0]). Please see the following original pages for further details.
-
-- richmond-azaelias.ply - Azaleas, Isabella Plantation, Richmond Park.
-  Created by [Thomas Flynn].
-  https://sketchfab.com/models/188576acfe89480f90c38d9df9a4b19a
-
-- anthidium-forcipatum.ply - Anthidium forcipatum ♀ (Point Cloud).
-  Created by [Thomas Flynn].
-  https://sketchfab.com/models/3493da15a8db4f34929fc38d9d0fcb2c
-
-- Guanyin.ply - Guanyin (Avalokitesvara). Created by [Geoffrey Marchal].
-  https://sketchfab.com/models/9db9a5dfb6744a5586dfcb96cb8a7dc5
-
-[Thomas Flynn]: https://sketchfab.com/nebulousflynn
-[Geoffrey Marchal]: https://sketchfab.com/geoffreymarchal
-[CC BY 4.0]: https://creativecommons.org/licenses/by/4.0/
+This package is licensed under the Unlicense. See [LICENSE](LICENSE) for details.
