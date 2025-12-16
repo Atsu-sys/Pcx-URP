@@ -16,13 +16,23 @@ namespace Pcx
             editor.ShaderProperty(FindProperty("_ColorOrder", props), "Color Order");
             editor.ShaderProperty(FindProperty("_PointSize", props), "Point Size");
             editor.ShaderProperty(FindProperty("_Distance", props), "Apply Distance");
+            
+            // Rotation as Vector3
+            MaterialProperty rotProp = FindProperty("_Rotation", props);
+            Vector4 rotVec = rotProp.vectorValue;
+            Vector3 newRot = EditorGUILayout.Vector3Field("Rotation", new Vector3(rotVec.x, rotVec.y, rotVec.z));
+            rotProp.vectorValue = new Vector4(newRot.x, newRot.y, newRot.z, 0);
+            
+            // Density slider
+            MaterialProperty densityProp = FindProperty("_Density", props);
+            float density = EditorGUILayout.Slider("Density", densityProp.floatValue, 0f, 1f);
+            densityProp.floatValue = density;
 
             if (EditorGUI.EndChangeCheck())
             {
                 foreach (var m in editor.targets)
                     if (m is Material mat)
                     {
-                        // KeywordEnum handles keywords automatically, but marking distinct dirty helps.
                         EditorUtility.SetDirty(mat);
                     }
             }
@@ -43,6 +53,17 @@ namespace Pcx
             editor.ShaderProperty(FindProperty("_Tint", props), "Tint");
             editor.ShaderProperty(FindProperty("_ColorOrder", props), "Color Order");
             editor.ShaderProperty(FindProperty("_PointSize", props), "Point Size");
+            
+            // Rotation as Vector3
+            MaterialProperty rotProp = FindProperty("_Rotation", props);
+            Vector4 rotVec = rotProp.vectorValue;
+            Vector3 newRot = EditorGUILayout.Vector3Field("Rotation", new Vector3(rotVec.x, rotVec.y, rotVec.z));
+            rotProp.vectorValue = new Vector4(newRot.x, newRot.y, newRot.z, 0);
+            
+            // Density slider
+            MaterialProperty densityProp = FindProperty("_Density", props);
+            float density = EditorGUILayout.Slider("Density", densityProp.floatValue, 0f, 1f);
+            densityProp.floatValue = density;
 
             if (EditorGUI.EndChangeCheck())
             {

@@ -10,6 +10,8 @@ Shader "Point Cloud/Point URP VR"
         _PointSize("Point Size", Float) = 0.05
         [Toggle] _Distance("Apply Distance", Float) = 1
         [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
+        _Rotation("Rotation", Vector) = (0, 0, 0, 0)
+        _Density("Density", Range(0, 1)) = 1
     }
     SubShader
     {
@@ -54,6 +56,8 @@ Shader "Point Cloud/Point URP VR"
             CBUFFER_START(UnityPerMaterial)
                 half4 _Tint;
                 half _PointSize;
+                half4 _Rotation;
+                half _Density;
             CBUFFER_END
 
             float4x4 _Transform;
@@ -80,6 +84,20 @@ Shader "Point Cloud/Point URP VR"
                 #endif
             }
 
+            float3 RotatePoint(float3 p, float3 angles)
+            {
+                float3 rad = angles * (3.14159265359 / 180.0);
+                float3 s, c;
+                sincos(rad, s, c);
+                float3 p1 = p; // X
+                p1.yz = float2(p.y * c.x - p.z * s.x, p.y * s.x + p.z * c.x);
+                float3 p2 = p1; // Y
+                p2.xz = float2(p1.x * c.y + p1.z * s.y, -p1.x * s.y + p1.z * c.y);
+                float3 p3 = p2; // Z
+                p3.xy = float2(p2.x * c.z - p2.y * s.z, p2.x * s.z + p2.y * c.z);
+                return p3;
+            }
+
         #if _COMPUTE_BUFFER
             Varyings Vertex(uint vid : SV_VertexID, uint instanceID : SV_InstanceID)
         #else
@@ -103,6 +121,12 @@ Shader "Point Cloud/Point URP VR"
                 float4 pos = input.position;
                 half3 col = input.color;
             #endif
+
+                // Apply rotation
+                if (any(_Rotation.xyz))
+                {
+                    pos.xyz = RotatePoint(pos.xyz, _Rotation.xyz);
+                }
 
                 // Apply color channel swap
                 col = SwapColorChannels(col);
@@ -131,6 +155,13 @@ Shader "Point Cloud/Point URP VR"
             {
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
+                // Density-based discard
+                if (_Density < 1.0)
+                {
+                    float hash = frac(sin(dot(input.position.xy, float2(12.9898, 78.233))) * 43758.5453);
+                    if (hash > _Density) discard;
+                }
 
                 half4 c = half4(input.color, _Tint.a);
                 c.rgb = MixFog(c.rgb, input.fogFactor);
@@ -249,6 +280,7 @@ Shader "Point Cloud/Point URP VR"
 
             half4 _Tint;
             half _PointSize;
+            half4 _Rotation;
 
             half3 SwapColorChannels(half3 col)
             {
@@ -267,14 +299,31 @@ Shader "Point Cloud/Point URP VR"
                 #endif
             }
 
+            float3 RotatePoint(float3 p, float3 angles)
+            {
+                float3 rad = angles * (3.14159265359 / 180.0);
+                float3 s, c;
+                sincos(rad, s, c);
+                float3 p1 = p; // X
+                p1.yz = float2(p.y * c.x - p.z * s.x, p.y * s.x + p.z * c.x);
+                float3 p2 = p1; // Y
+                p2.xz = float2(p1.x * c.y + p1.z * s.y, -p1.x * s.y + p1.z * c.y);
+                float3 p3 = p2; // Z
+                p3.xy = float2(p2.x * c.z - p2.y * s.z, p2.x * s.z + p2.y * c.z);
+                return p3;
+            }
+
             v2f vert(appdata v)
             {
                 v2f o;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                
+                float4 pos = v.vertex;
+                if (any(_Rotation.xyz)) pos.xyz = RotatePoint(pos.xyz, _Rotation.xyz);
 
-                o.pos = UnityObjectToClipPos(v.vertex);
+                o.pos = UnityObjectToClipPos(pos);
                 half3 col = SwapColorChannels(v.color);
                 o.color = col * _Tint.rgb * 2;
             #ifdef _DISTANCE_ON

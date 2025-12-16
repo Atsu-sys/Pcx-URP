@@ -56,8 +56,11 @@
     <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Common.hlsl" />
     <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Disk.hlsl" />
     <None Include="Packages\com.atsusys.pcx-urp\Runtime\Pcx.Runtime.asmdef" />
+    <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Disk_VR.hlsl" />
     <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Disk.shader" />
+    <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Disk_VR.shader" />
     <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Point.shader" />
+    <None Include="Packages\com.atsusys.pcx-urp\Runtime\Shaders\Point_VR.shader" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">

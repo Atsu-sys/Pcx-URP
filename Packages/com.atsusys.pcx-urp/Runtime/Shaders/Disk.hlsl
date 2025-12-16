@@ -12,6 +12,8 @@
 CBUFFER_START(UnityPerMaterial)
     half4 _Tint;
     half _PointSize;
+    half4 _Rotation;
+    half _Density;
 CBUFFER_END
 
 float4x4 _Transform;
@@ -36,6 +38,20 @@ half3 SwapColorChannels(half3 col)
     #else // _COLORORDER_RGB (default)
         return col.rgb;
     #endif
+}
+
+float3 RotatePoint(float3 p, float3 angles)
+{
+    float3 rad = angles * (3.14159265359 / 180.0);
+    float3 s, c;
+    sincos(rad, s, c);
+    float3 p1 = p;
+    p1.yz = float2(p.y * c.x - p.z * s.x, p.y * s.x + p.z * c.x);
+    float3 p2 = p1;
+    p2.xz = float2(p1.x * c.y + p1.z * s.y, -p1.x * s.y + p1.z * c.y);
+    float3 p3 = p2;
+    p3.xy = float2(p2.x * c.z - p2.y * s.z, p2.x * s.z + p2.y * c.z);
+    return p3;
 }
 
 // Vertex input attributes
@@ -73,6 +89,12 @@ Varyings Vertex(Attributes input)
 #endif
 
 #if !PCX_SHADOW_CASTER
+    // Apply rotation
+    if (any(_Rotation.xyz))
+    {
+        pos.xyz = RotatePoint(pos.xyz, _Rotation.xyz);
+    }
+
     // Apply color channel swap
     col = SwapColorChannels(col);
 
@@ -148,6 +170,13 @@ half4 Fragment(Varyings input) : SV_Target
 #if PCX_SHADOW_CASTER
     return 0;
 #else
+    // Density-based discard
+    if (_Density < 1.0)
+    {
+        float hash = frac(sin(dot(input.position.xy, float2(12.9898, 78.233))) * 43758.5453);
+        if (hash > _Density) discard;
+    }
+    
     half4 c = half4(input.color, _Tint.a);
     c.rgb = MixFog(c.rgb, input.fogFactor);
     return c;
