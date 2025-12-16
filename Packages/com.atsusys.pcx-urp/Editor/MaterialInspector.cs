@@ -10,10 +10,22 @@ namespace Pcx
     {
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] props)
         {
+            EditorGUI.BeginChangeCheck();
+            
             editor.ShaderProperty(FindProperty("_Tint", props), "Tint");
             editor.ShaderProperty(FindProperty("_ColorOrder", props), "Color Order");
             editor.ShaderProperty(FindProperty("_PointSize", props), "Point Size");
             editor.ShaderProperty(FindProperty("_Distance", props), "Apply Distance");
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (var m in editor.targets)
+                    if (m is Material mat)
+                    {
+                        // KeywordEnum handles keywords automatically, but marking distinct dirty helps.
+                        EditorUtility.SetDirty(mat);
+                    }
+            }
 
             EditorGUILayout.HelpBox(
                 "Only some platform support these point size properties.",
@@ -26,9 +38,17 @@ namespace Pcx
     {
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] props)
         {
+            EditorGUI.BeginChangeCheck();
+
             editor.ShaderProperty(FindProperty("_Tint", props), "Tint");
             editor.ShaderProperty(FindProperty("_ColorOrder", props), "Color Order");
             editor.ShaderProperty(FindProperty("_PointSize", props), "Point Size");
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                foreach (var m in editor.targets)
+                    if (m is Material mat) EditorUtility.SetDirty(mat);
+            }
         }
     }
 }

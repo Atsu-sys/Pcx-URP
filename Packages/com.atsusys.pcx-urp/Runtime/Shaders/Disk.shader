@@ -26,7 +26,7 @@ Shader "Point Cloud/Disk URP"
             #pragma fragment Fragment
             #pragma multi_compile_fog
             #pragma multi_compile _ _COMPUTE_BUFFER
-            #pragma multi_compile _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
+            #pragma shader_feature_local _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
             #include "Disk.hlsl"
             ENDHLSL
         }

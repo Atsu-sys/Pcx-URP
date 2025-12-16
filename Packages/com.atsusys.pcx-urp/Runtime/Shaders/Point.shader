@@ -28,7 +28,7 @@ Shader "Point Cloud/Point URP"
             #pragma multi_compile_fog
             #pragma multi_compile _ _DISTANCE_ON
             #pragma multi_compile _ _COMPUTE_BUFFER
-            #pragma multi_compile _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
+            #pragma shader_feature_local _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Common.hlsl"
