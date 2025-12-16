@@ -155,6 +155,7 @@ void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
 {
     // VR: Setup Instance ID from input
     UNITY_SETUP_INSTANCE_ID(input[0]);
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input[0]);
 
     float4 origin = input[0].position;
     float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
@@ -162,8 +163,9 @@ void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
     // Copy the basic information.
     Varyings o = input[0];
     
-    // VR: Initialize Stereo Output for the output vertex
-    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+    // VR: Transfer stereo info from input to output
+    UNITY_TRANSFER_INSTANCE_ID(input[0], o);
+    UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(input[0], o);
 
     // Determine the number of slices based on the radius of the
     // point on the screen.
