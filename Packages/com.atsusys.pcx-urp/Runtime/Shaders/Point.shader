@@ -9,6 +9,7 @@ Shader "Point Cloud/Point URP"
         _Tint("Tint", Color) = (0.5, 0.5, 0.5, 1)
         _PointSize("Point Size", Float) = 0.05
         [Toggle] _Distance("Apply Distance", Float) = 1
+        [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
     }
     SubShader
     {
@@ -27,6 +28,7 @@ Shader "Point Cloud/Point URP"
             #pragma multi_compile_fog
             #pragma multi_compile _ _DISTANCE_ON
             #pragma multi_compile _ _COMPUTE_BUFFER
+            #pragma multi_compile _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Common.hlsl"
@@ -56,6 +58,24 @@ Shader "Point Cloud/Point URP"
             StructuredBuffer<float4> _PointBuffer;
         #endif
 
+            // Color channel swap function
+            half3 SwapColorChannels(half3 col)
+            {
+                #if defined(_COLORORDER_BGR)
+                    return col.bgr;
+                #elif defined(_COLORORDER_GBR)
+                    return col.gbr;
+                #elif defined(_COLORORDER_GRB)
+                    return col.grb;
+                #elif defined(_COLORORDER_BRG)
+                    return col.brg;
+                #elif defined(_COLORORDER_RBG)
+                    return col.rbg;
+                #else // _COLORORDER_RGB (default)
+                    return col.rgb;
+                #endif
+            }
+
         #if _COMPUTE_BUFFER
             Varyings Vertex(uint vid : SV_VertexID)
         #else
@@ -70,6 +90,9 @@ Shader "Point Cloud/Point URP"
                 float4 pos = input.position;
                 half3 col = input.color;
             #endif
+
+                // Apply color channel swap
+                col = SwapColorChannels(col);
 
                 // Apply tint with color space handling
                 #if defined(UNITY_COLORSPACE_GAMMA)
@@ -173,6 +196,7 @@ Shader "Point Cloud/Point URP"
             #pragma fragment frag
             #pragma multi_compile_fog
             #pragma multi_compile _ _DISTANCE_ON
+            #pragma multi_compile _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
 
             #include "UnityCG.cginc"
 
@@ -193,11 +217,29 @@ Shader "Point Cloud/Point URP"
             half4 _Tint;
             half _PointSize;
 
+            half3 SwapColorChannels(half3 col)
+            {
+                #if defined(_COLORORDER_BGR)
+                    return col.bgr;
+                #elif defined(_COLORORDER_GBR)
+                    return col.gbr;
+                #elif defined(_COLORORDER_GRB)
+                    return col.grb;
+                #elif defined(_COLORORDER_BRG)
+                    return col.brg;
+                #elif defined(_COLORORDER_RBG)
+                    return col.rbg;
+                #else
+                    return col.rgb;
+                #endif
+            }
+
             v2f vert(appdata v)
             {
                 v2f o;
                 o.pos = UnityObjectToClipPos(v.vertex);
-                o.color = v.color * _Tint.rgb * 2;
+                half3 col = SwapColorChannels(v.color);
+                o.color = col * _Tint.rgb * 2;
             #ifdef _DISTANCE_ON
                 o.psize = _PointSize / o.pos.w * _ScreenParams.y;
             #else

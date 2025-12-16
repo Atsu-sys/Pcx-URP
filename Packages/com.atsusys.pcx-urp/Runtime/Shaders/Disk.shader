@@ -8,6 +8,7 @@ Shader "Point Cloud/Disk URP"
     {
         _Tint("Tint", Color) = (0.5, 0.5, 0.5, 1)
         _PointSize("Point Size", Float) = 0.05
+        [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
     }
     SubShader
     {
@@ -25,6 +26,7 @@ Shader "Point Cloud/Disk URP"
             #pragma fragment Fragment
             #pragma multi_compile_fog
             #pragma multi_compile _ _COMPUTE_BUFFER
+            #pragma multi_compile _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
             #include "Disk.hlsl"
             ENDHLSL
         }
@@ -78,12 +80,30 @@ Shader "Point Cloud/Disk URP"
             #pragma multi_compile_fog
             #pragma multi_compile _ UNITY_COLORSPACE_GAMMA
             #pragma multi_compile _ _COMPUTE_BUFFER
+            #pragma multi_compile _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
             
             #include "UnityCG.cginc"
             
             half4 _Tint;
             half _PointSize;
             float4x4 _Transform;
+            
+            half3 SwapColorChannels(half3 col)
+            {
+                #if defined(_COLORORDER_BGR)
+                    return col.bgr;
+                #elif defined(_COLORORDER_GBR)
+                    return col.gbr;
+                #elif defined(_COLORORDER_GRB)
+                    return col.grb;
+                #elif defined(_COLORORDER_BRG)
+                    return col.brg;
+                #elif defined(_COLORORDER_RBG)
+                    return col.rbg;
+                #else
+                    return col.rgb;
+                #endif
+            }
             
             struct Attributes
             {
@@ -109,7 +129,7 @@ Shader "Point Cloud/Disk URP"
                 half3 col = half3(1, 1, 1);
             #else
                 float4 pos = input.position;
-                half3 col = input.color;
+                half3 col = SwapColorChannels(input.color);
             #endif
                 col *= _Tint.rgb * 2;
                 

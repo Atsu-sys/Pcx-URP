@@ -4,81 +4,60 @@ PCX for URP - Point Cloud Importer/Renderer for Unity
 ![GIF](https://i.imgur.com/zc6P96x.gif)
 ![GIF](https://i.imgur.com/lpWIiXu.gif)
 
-**PCX for URP** is a custom importer and renderer that allows for handling point cloud data
-in Unity with **Universal Render Pipeline (URP)** support.
+PCX for URP は、Unityの Universal Render Pipeline (URP) 環境において、ポイントクラウド（点群）データをインポート・レンダリングするためのカスタムパッケージです。
 
-> **Note**: This is a fork of [keijiro/Pcx](https://github.com/keijiro/Pcx), modified for URP compatibility.
+クレジット / 前提 本プロジェクトは、Keijiro Takahashi 氏によるライブラリ keijiro/Pcx をフォークし、URP および Unity 6 環境で動作するように改修・最適化を行ったものです。
 
-## System Requirements
+## システム要件 (System Requirements)
+Unity: Unity 6 (6000.0 以上)
 
-- Unity 6 (6000.0 or later)
-- Universal Render Pipeline (URP) 17.0.0 or later
+Pipeline: Universal Render Pipeline (URP) 17.0.0 以上
 
-## How To Install / インストール方法
+## インストール方法 (Installation)
 
-### Option 1: Install via Git URL (推奨)
+Unity エディタで Window > Package Manager を開く。
 
-1. Unity エディタで **Window > Package Manager** を開く
-2. 左上の **+** ボタンをクリック
-3. **Add package from git URL...** を選択
-4. 以下のURLを入力して **Add** をクリック:
+左上の + ボタンをクリックし、Add package from git URL... を選択。
+
+以下のURLを入力して Add をクリックしてください。
 
 ```
 https://github.com/Atsu-sys/Pcx-URP.git?path=Packages/com.atsusys.pcx-urp
 ```
 
-> **Note**: 特定のバージョンを指定する場合は、末尾に `#v1.0.0` のようにタグを追加できます。
+## クイックスタート
+用途に合わせて2つの使用方法があります。
 
-### Option 2: manifest.json を直接編集
+### 方法1: Mesh + MeshRenderer (シンプル)
+標準的なMeshとして扱いたい場合の手順です。
 
-`Packages/manifest.json` を開き、`dependencies` に以下を追加:
+インポート設定: .ply ファイルを選択し、Inspectorで Container Type を Mesh に設定して Apply します。
 
-```json
-{
-  "dependencies": {
-    "com.atsusys.pcx-urp": "https://github.com/Atsu-sys/Pcx-URP.git?path=Packages/com.atsusys.pcx-urp",
-    ...
-  }
-}
-```
+シーン配置: GameObjectを作成し、Mesh Filter と Mesh Renderer を追加します。
 
-### Option 3: ローカルにクローンして追加
+マテリアル設定: Mesh Renderer のマテリアルに、以下のいずれかを設定します。
 
-1. このリポジトリをクローン
-2. Package Manager で **Add package from disk...** をクリック
-3. `Packages/com.atsusys.pcx-urp/package.json` を選択
+Point Cloud/Point URP
 
-## Quick Start / クイックスタート
+Point Cloud/Disk URP
 
-### 方法1: Mesh + MeshRenderer（シンプル）
+### 方法2: PointCloudRenderer (ComputeBuffer)
+大量の点を効率的に描画する場合の手順です。
 
-1. `.ply` ファイルをプロジェクトにインポート（Container Type: `Mesh`）
-2. GameObjectに **Mesh Filter** と **Mesh Renderer** を追加
-3. マテリアルに `Point Cloud/Point URP` または `Point Cloud/Disk URP` を使用
+インポート設定: .ply ファイルを選択し、Inspectorで Container Type を Compute Buffer に設定して Apply します。
 
-### 方法2: PointCloudRenderer（ComputeBuffer）
+シーン配置: GameObjectを作成し、Point Cloud Renderer コンポーネントを追加します。
 
-1. `.ply` ファイルをインポート（Container Type: `Compute Buffer`）
-2. GameObjectに **Point Cloud Renderer** コンポーネントを追加
-3. **Source Data** に PointCloudData アセットを設定
+データ設定: コンポーネントの Source Data スロットに、インポートした PointCloudData アセットをドラッグ＆ドロップします。
 
-> 詳細は [パッケージREADME](Packages/com.atsusys.pcx-urp/README.md) を参照
+## オリジナル版からの変更点
+オリジナル版（jp.keijiro.pcx）からの主な変更点は以下の通りです。
 
-## Documentation
+URP 完全対応: すべてのシェーダーを Universal Render Pipeline 用に書き換えました。
 
-See the [package README](Packages/com.atsusys.pcx-urp/README.md) for detailed usage instructions.
+Unity 6 対応: 最小要件を Unity 6 (6000.0) に更新しました。
 
+パッケージID変更: jp.keijiro.pcx から com.atsusys.pcx-urp に変更されています。
 
-## Changes from Original
-
-- **URP Support**: All shaders converted to Universal Render Pipeline
-- **Unity 6 Compatible**: Updated minimum Unity version to 6000.0
-- **Package Renamed**: Changed from `jp.keijiro.pcx` to `com.atsusys.pcx-urp`
-
-## Acknowledgements
-
-This package is based on [Pcx](https://github.com/keijiro/Pcx) by Keijiro Takahashi.
-
-## License
-
-This package is licensed under the Unlicense. See [LICENSE](LICENSE) for details.
+## 謝辞
+このパッケージは、Keijiro Takahashi氏によるPcxを基にしています。コミュニティへの彼の貢献に深く感謝いたします。

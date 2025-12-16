@@ -82,13 +82,16 @@ namespace Pcx
 
         static Material GetDefaultMaterial()
         {
-            // Via package manager (new package name)
-            var path_upm = "Packages/com.atsusys.pcx-urp/Editor/Default Point.mat";
+            // Primary: Runtime/Materials folder (new location)
+            var path_runtime = "Packages/com.atsusys.pcx-urp/Runtime/Materials/Point Cloud_Point URP.mat";
+            // Fallback: Editor folder
+            var path_editor = "Packages/com.atsusys.pcx-urp/Editor/Default Point.mat";
             // Fallback: old package name
             var path_old = "Packages/jp.keijiro.pcx/Editor/Default Point.mat";
-            // Via project asset database
+            // Fallback: project asset database
             var path_prj = "Assets/Pcx/Editor/Default Point.mat";
-            return AssetDatabase.LoadAssetAtPath<Material>(path_upm) ??
+            return AssetDatabase.LoadAssetAtPath<Material>(path_runtime) ??
+                   AssetDatabase.LoadAssetAtPath<Material>(path_editor) ??
                    AssetDatabase.LoadAssetAtPath<Material>(path_old) ??
                    AssetDatabase.LoadAssetAtPath<Material>(path_prj);
         }
