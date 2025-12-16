@@ -17,7 +17,7 @@ using System.Linq;
 
 namespace Pcx
 {
-    [ScriptedImporter(1, "ply")]
+    [ScriptedImporter(100, "ply")]
     class PlyImporter : ScriptedImporter
     {
         #region ScriptedImporter implementation
