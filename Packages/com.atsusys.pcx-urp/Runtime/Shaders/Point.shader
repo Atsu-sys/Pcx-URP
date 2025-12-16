@@ -11,7 +11,6 @@ Shader "Point Cloud/Point URP"
         [Toggle] _Distance("Apply Distance", Float) = 1
         [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
         _Rotation("Rotation", Vector) = (0, 0, 0, 0)
-        _Density("Density", Range(0, 1)) = 1
     }
     SubShader
     {
@@ -79,7 +78,6 @@ Shader "Point Cloud/Point URP"
             }
 
             half4 _Rotation;
-            half _Density;
 
             float3 RotatePoint(float3 p, float3 angles)
             {
@@ -146,13 +144,6 @@ Shader "Point Cloud/Point URP"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                // Density-based point discard using position hash
-                if (_Density < 1.0)
-                {
-                    float hash = frac(sin(dot(input.position.xy, float2(12.9898, 78.233))) * 43758.5453);
-                    if (hash > _Density) discard;
-                }
-                
                 half4 c = half4(input.color, _Tint.a);
                 c.rgb = MixFog(c.rgb, input.fogFactor);
                 return c;

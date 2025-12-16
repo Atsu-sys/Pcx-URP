@@ -14,5 +14,16 @@ Desktop.ini
 /Temp
 /UserSettings
 
+# Unity auto-generated project files (should not be committed)
+*.csproj
+*.sln
+*.slnx
+.vsconfig
+
+# Visual Studio
+.vs/
+*.userprefs
+*.user
+
 /Extras/pcx-strip/*.o
 /Extras/pcx-strip/pcx-strip

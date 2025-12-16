@@ -188,6 +188,13 @@ namespace Pcx
                     MeshTopology.Points, 0
                 );
 
+                // Recalculate bounds and expand them to prevent frustum culling issues
+                // when shader applies rotation or other transforms
+                mesh.RecalculateBounds();
+                var bounds = mesh.bounds;
+                bounds.Expand(bounds.size.magnitude * 2f); // Double the size for safety
+                mesh.bounds = bounds;
+
                 mesh.UploadMeshData(true);
                 return mesh;
             }

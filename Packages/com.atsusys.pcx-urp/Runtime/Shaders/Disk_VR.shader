@@ -10,7 +10,6 @@ Shader "Point Cloud/Disk URP VR"
         _PointSize("Point Size", Float) = 0.05
         [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
         _Rotation("Rotation", Vector) = (0, 0, 0, 0)
-        _Density("Density", Range(0, 1)) = 1
     }
     SubShader
     {

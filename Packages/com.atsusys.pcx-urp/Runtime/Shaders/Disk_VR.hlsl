@@ -13,7 +13,6 @@ CBUFFER_START(UnityPerMaterial)
     half4 _Tint;
     half _PointSize;
     half4 _Rotation;
-    half _Density;
 CBUFFER_END
 
 float4x4 _Transform;
@@ -210,13 +209,6 @@ half4 Fragment(Varyings input) : SV_Target
 #if PCX_SHADOW_CASTER
     return 0;
 #else
-    // Density-based discard
-    if (_Density < 1.0)
-    {
-        float hash = frac(sin(dot(input.position.xy, float2(12.9898, 78.233))) * 43758.5453);
-        if (hash > _Density) discard;
-    }
-    
     half4 c = half4(input.color, _Tint.a);
     c.rgb = MixFog(c.rgb, input.fogFactor);
     return c;

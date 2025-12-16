@@ -22,11 +22,6 @@ namespace Pcx
             Vector4 rotVec = rotProp.vectorValue;
             Vector3 newRot = EditorGUILayout.Vector3Field("Rotation", new Vector3(rotVec.x, rotVec.y, rotVec.z));
             rotProp.vectorValue = new Vector4(newRot.x, newRot.y, newRot.z, 0);
-            
-            // Density slider
-            MaterialProperty densityProp = FindProperty("_Density", props);
-            float density = EditorGUILayout.Slider("Density", densityProp.floatValue, 0f, 1f);
-            densityProp.floatValue = density;
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -59,11 +54,6 @@ namespace Pcx
             Vector4 rotVec = rotProp.vectorValue;
             Vector3 newRot = EditorGUILayout.Vector3Field("Rotation", new Vector3(rotVec.x, rotVec.y, rotVec.z));
             rotProp.vectorValue = new Vector4(newRot.x, newRot.y, newRot.z, 0);
-            
-            // Density slider
-            MaterialProperty densityProp = FindProperty("_Density", props);
-            float density = EditorGUILayout.Slider("Density", densityProp.floatValue, 0f, 1f);
-            densityProp.floatValue = density;
 
             if (EditorGUI.EndChangeCheck())
             {
