@@ -82,11 +82,14 @@ namespace Pcx
 
         static Material GetDefaultMaterial()
         {
-            // Via package manager
-            var path_upm = "Packages/jp.keijiro.pcx/Editor/Default Point.mat";
+            // Via package manager (new package name)
+            var path_upm = "Packages/com.atsusys.pcx-urp/Editor/Default Point.mat";
+            // Fallback: old package name
+            var path_old = "Packages/jp.keijiro.pcx/Editor/Default Point.mat";
             // Via project asset database
             var path_prj = "Assets/Pcx/Editor/Default Point.mat";
             return AssetDatabase.LoadAssetAtPath<Material>(path_upm) ??
+                   AssetDatabase.LoadAssetAtPath<Material>(path_old) ??
                    AssetDatabase.LoadAssetAtPath<Material>(path_prj);
         }
 
