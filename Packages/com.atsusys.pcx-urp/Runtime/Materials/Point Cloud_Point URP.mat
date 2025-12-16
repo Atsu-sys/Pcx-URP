@@ -8,12 +8,13 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Point Cloud_Point URP
-  m_Shader: {fileID: 4800000, guid: 1baec256dca7c1642b87d05510e75a3f, type: 3}
+  m_Shader: {fileID: 4800000, guid: c3d4e5f6789012345678abcdef012345, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
+  - _COLORORDER_BGR
+  m_InvalidKeywords:
   - _DISTANCE_ON
-  m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -26,9 +27,10 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _ColorOrder: 1
     - _Distance: 1
-    - _PointSize: 0.05
+    - _PointSize: 0.01
     m_Colors:
-    - _Tint: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    - _Tint: {r: 0.66666657, g: 0.66666657, b: 0.66666657, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

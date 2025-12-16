@@ -43,9 +43,11 @@ struct Attributes
 {
 #if _COMPUTE_BUFFER
     uint vertexID : SV_VertexID;
+    UNITY_VERTEX_INPUT_INSTANCE_ID // Added for VR (though mostly manual in compute buffer path)
 #else
     float4 position : POSITION;
     half3 color : COLOR;
+    UNITY_VERTEX_INPUT_INSTANCE_ID // Added for VR
 #endif
 };
 
@@ -57,17 +59,33 @@ struct Varyings
     half3 color : COLOR;
     float fogFactor : TEXCOORD0;
 #endif
+    UNITY_VERTEX_INPUT_INSTANCE_ID // Added for VR
+    UNITY_VERTEX_OUTPUT_STEREO     // Added for VR
 };
 
 // Vertex phase
-Varyings Vertex(Attributes input)
-{
-    // Retrieve vertex attributes.
 #if _COMPUTE_BUFFER
-    float4 pt = _PointBuffer[input.vertexID];
+Varyings Vertex(uint vid : SV_VertexID, uint instanceID : SV_InstanceID)
+#else
+Varyings Vertex(Attributes input)
+#endif
+{
+    Varyings o = (Varyings)0;
+
+#if _COMPUTE_BUFFER
+    // VR: Manual setup using instanceID passed from SV_InstanceID
+    UnitySetupInstanceID(instanceID);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+    float4 pt = _PointBuffer[vid];
     float4 pos = mul(_Transform, float4(pt.xyz, 1));
     half3 col = PcxDecodeColor(asuint(pt.w));
 #else
+    // VR: Standard setup
+    UNITY_SETUP_INSTANCE_ID(input);
+    UNITY_TRANSFER_INSTANCE_ID(input, o);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
     float4 pos = input.position;
     half3 col = input.color;
 #endif
@@ -88,8 +106,21 @@ Varyings Vertex(Attributes input)
 #endif
 
     // Set vertex output.
-    Varyings o;
+    // o.position = TransformObjectToHClip(pos.xyz); // Removed: Done in Geometry shader or redundant?
+    // Wait, Disk shader usually does View Space calculations in Geometry shader?
+    // Let's check original Disk.hlsl.
+    // Original Disk.hlsl (Step 356) does: o.position = TransformObjectToHClip(pos.xyz);
+    // AND then Geometry shader takes it as "origin".
+    // Wait, if Geometry shader expands it, it expects "origin" to be in Clip Space?
+    // Step 356 Lines 83-91:
+    // float4 origin = input[0].position;
+    // float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
+    // float radius = extent.y / origin.w * _ScreenParams.y;
+    // This logic implies input position is in CLIP SPACE (homogeneous).
+    // UNITY_MATRIX_P._11_22 suggests accessing Projection Matrix directly.
+    
     o.position = TransformObjectToHClip(pos.xyz);
+
 #if !PCX_SHADOW_CASTER
     o.color = col;
     o.fogFactor = ComputeFogFactor(o.position.z);
@@ -101,11 +132,17 @@ Varyings Vertex(Attributes input)
 [maxvertexcount(36)]
 void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
 {
+    // VR: Setup Instance ID from input
+    UNITY_SETUP_INSTANCE_ID(input[0]);
+
     float4 origin = input[0].position;
     float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
 
     // Copy the basic information.
     Varyings o = input[0];
+    
+    // VR: Initialize Stereo Output for the output vertex
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
     // Determine the number of slices based on the radius of the
     // point on the screen.
@@ -145,6 +182,10 @@ void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
 
 half4 Fragment(Varyings input) : SV_Target
 {
+    // VR: Setup Stereo Eye Index
+    UNITY_SETUP_INSTANCE_ID(input);
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
 #if PCX_SHADOW_CASTER
     return 0;
 #else
