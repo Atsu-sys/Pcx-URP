@@ -12,8 +12,10 @@ using UnityEditor.Experimental.AssetImporters;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Pcx
 {
@@ -109,6 +111,12 @@ namespace Pcx
             Data8, Data16, Data32, Data64
         }
 
+        enum PlyFormat
+        {
+            BinaryLittleEndian,
+            Ascii
+        }
+
         static int GetPropertySize(DataProperty p)
         {
             switch (p)
@@ -139,6 +147,7 @@ namespace Pcx
         {
             public List<DataProperty> properties = new List<DataProperty>();
             public int vertexCount = -1;
+            public PlyFormat format;
         }
 
         class DataBody
@@ -171,8 +180,13 @@ namespace Pcx
             try
             {
                 var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadDataHeader(new StreamReader(stream));
-                var body = ReadDataBody(header, new BinaryReader(stream));
+                var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
+                var header = ReadDataHeader(reader);
+                DataBody body;
+                if (header.format == PlyFormat.Ascii)
+                    body = ReadDataBodyAscii(header, reader);
+                else
+                    body = ReadDataBodyBinary(header, new BinaryReader(stream));
 
                 var mesh = new Mesh();
                 mesh.name = Path.GetFileNameWithoutExtension(path);
@@ -210,8 +224,13 @@ namespace Pcx
             try
             {
                 var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadDataHeader(new StreamReader(stream));
-                var body = ReadDataBody(header, new BinaryReader(stream));
+                var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
+                var header = ReadDataHeader(reader);
+                DataBody body;
+                if (header.format == PlyFormat.Ascii)
+                    body = ReadDataBodyAscii(header, reader);
+                else
+                    body = ReadDataBodyBinary(header, new BinaryReader(stream));
                 var data = ScriptableObject.CreateInstance<PointCloudData>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
@@ -229,8 +248,13 @@ namespace Pcx
             try
             {
                 var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadDataHeader(new StreamReader(stream));
-                var body = ReadDataBody(header, new BinaryReader(stream));
+                var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true);
+                var header = ReadDataHeader(reader);
+                DataBody body;
+                if (header.format == PlyFormat.Ascii)
+                    body = ReadDataBodyAscii(header, reader);
+                else
+                    body = ReadDataBodyBinary(header, new BinaryReader(stream));
                 var data = ScriptableObject.CreateInstance<BakedPointCloud>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
@@ -254,13 +278,28 @@ namespace Pcx
             if (line != "ply")
                 throw new ArgumentException("Magic number ('ply') mismatch.");
 
-            // Data format: check if it's binary/little endian.
+            // Data format: support binary little endian and ASCII.
             line = reader.ReadLine();
             readCount += line.Length + 1;
-            if (line != "format binary_little_endian 1.0")
+            var formatColumns = line.Split();
+            if (formatColumns.Length < 3 || formatColumns[0] != "format" || formatColumns[2] != "1.0")
                 throw new ArgumentException(
-                    "Invalid data format ('" + line + "'). " +
-                    "Should be binary/little endian.");
+                    "Invalid format declaration ('" + line + "'). " +
+                    "Expected 'format ascii 1.0' or 'format binary_little_endian 1.0'.");
+
+            switch (formatColumns[1])
+            {
+                case "binary_little_endian":
+                    data.format = PlyFormat.BinaryLittleEndian;
+                    break;
+                case "ascii":
+                    data.format = PlyFormat.Ascii;
+                    break;
+                default:
+                    throw new ArgumentException(
+                        "Unsupported data format ('" + line + "'). " +
+                        "Expected binary little endian or ascii.");
+            }
 
             // Read header contents.
             for (var skip = false;;)
@@ -360,11 +399,12 @@ namespace Pcx
 
             // Rewind the stream back to the exact position of the reader.
             reader.BaseStream.Position = readCount;
+            reader.DiscardBufferedData();
 
             return data;
         }
 
-        DataBody ReadDataBody(DataHeader header, BinaryReader reader)
+        DataBody ReadDataBodyBinary(DataHeader header, BinaryReader reader)
         {
             var data = new DataBody(header.vertexCount);
 
@@ -399,6 +439,64 @@ namespace Pcx
                         case DataProperty.Data16: reader.BaseStream.Position += 2; break;
                         case DataProperty.Data32: reader.BaseStream.Position += 4; break;
                         case DataProperty.Data64: reader.BaseStream.Position += 8; break;
+                    }
+                }
+
+                data.AddPoint(x, y, z, r, g, b, a);
+            }
+
+            return data;
+        }
+
+        DataBody ReadDataBodyAscii(DataHeader header, StreamReader reader)
+        {
+            var data = new DataBody(header.vertexCount);
+
+            for (var i = 0; i < header.vertexCount; i++)
+            {
+                var line = reader.ReadLine();
+                while (line != null && string.IsNullOrWhiteSpace(line))
+                    line = reader.ReadLine();
+
+                if (line == null)
+                    throw new EndOfStreamException("Unexpected end of file while reading ASCII PLY body.");
+
+                var tokens = line.Split((char[])null, StringSplitOptions.RemoveEmptyEntries);
+                if (tokens.Length < header.properties.Count)
+                    throw new ArgumentException("Vertex entry has fewer properties than declared in header.");
+
+                float x = 0, y = 0, z = 0;
+                Byte r = 255, g = 255, b = 255, a = 255;
+                var tokenIndex = 0;
+
+                foreach (var prop in header.properties)
+                {
+                    var token = tokens[tokenIndex++];
+                    switch (prop)
+                    {
+                        case DataProperty.R8: r = Byte.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.G8: g = Byte.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.B8: b = Byte.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.A8: a = Byte.Parse(token, CultureInfo.InvariantCulture); break;
+
+                        case DataProperty.R16: r = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
+                        case DataProperty.G16: g = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
+                        case DataProperty.B16: b = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
+                        case DataProperty.A16: a = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
+
+                        case DataProperty.SingleX: x = Single.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.SingleY: y = Single.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.SingleZ: z = Single.Parse(token, CultureInfo.InvariantCulture); break;
+
+                        case DataProperty.DoubleX: x = (float)Double.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.DoubleY: y = (float)Double.Parse(token, CultureInfo.InvariantCulture); break;
+                        case DataProperty.DoubleZ: z = (float)Double.Parse(token, CultureInfo.InvariantCulture); break;
+
+                        case DataProperty.Data8:
+                        case DataProperty.Data16:
+                        case DataProperty.Data32:
+                        case DataProperty.Data64:
+                            break;
                     }
                 }
 
