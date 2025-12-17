@@ -28,6 +28,7 @@ Shader "Point Cloud/Disk URP"
             #pragma multi_compile_fog
             #pragma multi_compile _ _COMPUTE_BUFFER
             #pragma shader_feature_local _COLORORDER_RGB _COLORORDER_BGR _COLORORDER_GBR _COLORORDER_GRB _COLORORDER_BRG _COLORORDER_RBG
+            #pragma multi_compile_instancing
             #include "Disk.hlsl"
             ENDHLSL
         }
@@ -42,6 +43,7 @@ Shader "Point Cloud/Disk URP"
             #pragma geometry Geometry
             #pragma fragment Fragment
             #pragma multi_compile _ _COMPUTE_BUFFER
+            #pragma multi_compile_instancing
             #define PCX_SHADOW_CASTER 1
             #include "Disk.hlsl"
             ENDHLSL
@@ -60,6 +62,7 @@ Shader "Point Cloud/Disk URP"
             #pragma geometry Geometry
             #pragma fragment Fragment
             #pragma multi_compile _ _COMPUTE_BUFFER
+            #pragma multi_compile_instancing
             #define PCX_SHADOW_CASTER 1
             #include "Disk.hlsl"
             ENDHLSL

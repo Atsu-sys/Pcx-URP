@@ -58,9 +58,11 @@ struct Attributes
 {
 #if _COMPUTE_BUFFER
     uint vertexID : SV_VertexID;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 #else
     float4 position : POSITION;
     half3 color : COLOR;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 #endif
 };
 
@@ -72,17 +74,31 @@ struct Varyings
     half3 color : COLOR;
     float fogFactor : TEXCOORD0;
 #endif
+    UNITY_VERTEX_INPUT_INSTANCE_ID
+    UNITY_VERTEX_OUTPUT_STEREO
 };
 
 // Vertex phase
-Varyings Vertex(Attributes input)
-{
-    // Retrieve vertex attributes.
 #if _COMPUTE_BUFFER
-    float4 pt = _PointBuffer[input.vertexID];
+Varyings Vertex(uint vid : SV_VertexID, uint instanceID : SV_InstanceID)
+#else
+Varyings Vertex(Attributes input)
+#endif
+{
+    Varyings o = (Varyings)0;
+
+#if _COMPUTE_BUFFER
+    UnitySetupInstanceID(instanceID);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
+    float4 pt = _PointBuffer[vid];
     float4 pos = mul(_Transform, float4(pt.xyz, 1));
     half3 col = PcxDecodeColor(asuint(pt.w));
 #else
+    UNITY_SETUP_INSTANCE_ID(input);
+    UNITY_TRANSFER_INSTANCE_ID(input, o);
+    UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+
     float4 pos = input.position;
     half3 col = input.color;
 #endif
@@ -109,7 +125,6 @@ Varyings Vertex(Attributes input)
 #endif
 
     // Set vertex output.
-    Varyings o;
     o.position = TransformObjectToHClip(pos.xyz);
 #if !PCX_SHADOW_CASTER
     o.color = col;
@@ -122,11 +137,16 @@ Varyings Vertex(Attributes input)
 [maxvertexcount(36)]
 void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
 {
+    UNITY_SETUP_INSTANCE_ID(input[0]);
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input[0]);
+
     float4 origin = input[0].position;
     float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
 
     // Copy the basic information.
     Varyings o = input[0];
+    UNITY_TRANSFER_INSTANCE_ID(input[0], o);
+    UNITY_TRANSFER_VERTEX_OUTPUT_STEREO(input[0], o);
 
     // Determine the number of slices based on the radius of the
     // point on the screen.
@@ -166,6 +186,9 @@ void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
 
 half4 Fragment(Varyings input) : SV_Target
 {
+    UNITY_SETUP_INSTANCE_ID(input);
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+
 #if PCX_SHADOW_CASTER
     return 0;
 #else
