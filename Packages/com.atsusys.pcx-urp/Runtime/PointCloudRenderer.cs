@@ -85,6 +85,7 @@ namespace Pcx
 
             // Check the camera condition.
             var camera = Camera.current;
+            if (camera == null) return;
             if ((camera.cullingMask & (1 << gameObject.layer)) == 0) return;
             if (camera.name == "Preview Scene Camera") return;
 
@@ -115,8 +116,29 @@ namespace Pcx
             }
 
             // Use the external buffer if given any.
-            var pointBuffer = sourceBuffer != null ?
-                sourceBuffer : _sourceData.computeBuffer;
+            ComputeBuffer pointBuffer = null;
+            if (sourceBuffer != null)
+            {
+                pointBuffer = sourceBuffer;
+            }
+            else if (_sourceData != null)
+            {
+                pointBuffer = _sourceData.computeBuffer;
+            }
+
+            // Ensure we have a valid buffer
+            if (pointBuffer == null) return;
+            
+            // Check if buffer is valid (not disposed)
+            try
+            {
+                if (pointBuffer.count == 0) return;
+            }
+            catch
+            {
+                // Buffer has been disposed
+                return;
+            }
 
             if (_pointSize == 0)
             {
@@ -136,7 +158,7 @@ namespace Pcx
                 _diskMaterial.SetColor("_Tint", _pointTint);
                 _diskMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _diskMaterial.SetBuffer("_PointBuffer", pointBuffer);
-                _diskMaterial.SetFloat("_PointSize", pointSize);
+                _diskMaterial.SetFloat("_PointSize", _pointSize);
                 #if UNITY_2019_1_OR_NEWER
                 Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
                 #else

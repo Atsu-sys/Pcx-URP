@@ -16,7 +16,7 @@ namespace Pcx
 
         /// Number of points.
         public int pointCount {
-            get { return _pointData.Length; }
+            get { return _pointData != null ? _pointData.Length : 0; }
         }
 
         /// Get access to the compute buffer that contains the point cloud.
