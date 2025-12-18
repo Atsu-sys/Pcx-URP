@@ -191,7 +191,12 @@ namespace Pcx
                 if (header.format == PlyFormat.Ascii)
                     body = ReadDataBodyAscii(header, reader);
                 else
+                {
+                    // Ensure stream position is correct for binary reading
+                    stream.Position = reader.BaseStream.Position;
+                    reader.DiscardBufferedData();
                     body = ReadDataBodyBinary(header, new BinaryReader(stream));
+                }
 
                 var mesh = new Mesh();
                 mesh.name = Path.GetFileNameWithoutExtension(path);
@@ -235,7 +240,12 @@ namespace Pcx
                 if (header.format == PlyFormat.Ascii)
                     body = ReadDataBodyAscii(header, reader);
                 else
+                {
+                    // Ensure stream position is correct for binary reading
+                    stream.Position = reader.BaseStream.Position;
+                    reader.DiscardBufferedData();
                     body = ReadDataBodyBinary(header, new BinaryReader(stream));
+                }
                 var data = ScriptableObject.CreateInstance<PointCloudData>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
@@ -259,7 +269,12 @@ namespace Pcx
                 if (header.format == PlyFormat.Ascii)
                     body = ReadDataBodyAscii(header, reader);
                 else
+                {
+                    // Ensure stream position is correct for binary reading
+                    stream.Position = reader.BaseStream.Position;
+                    reader.DiscardBufferedData();
                     body = ReadDataBodyBinary(header, new BinaryReader(stream));
+                }
                 var data = ScriptableObject.CreateInstance<BakedPointCloud>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
@@ -276,6 +291,7 @@ namespace Pcx
         {
             var data = new DataHeader();
             var readCount = 0;
+            var isBinary = false;
 
             // Magic number line ("ply")
             var line = reader.ReadLine();
@@ -296,6 +312,7 @@ namespace Pcx
             {
                 case "binary_little_endian":
                     data.format = PlyFormat.BinaryLittleEndian;
+                    isBinary = true;
                     break;
                 case "ascii":
                     data.format = PlyFormat.Ascii;
@@ -312,7 +329,12 @@ namespace Pcx
                 // Read a line and split it with white space.
                 line = reader.ReadLine();
                 readCount += line.Length + 1;
-                if (line == "end_header") break;
+                if (line == "end_header")
+                {
+                    // For binary files, include the newline after "end_header"
+                    if (isBinary) readCount += 1;
+                    break;
+                }
                 var col = line.Split();
 
                 // Element declaration (unskippable)
@@ -418,10 +440,67 @@ namespace Pcx
                     data.properties.Add(prop);
                 }
             }
+            
+            // Debug: Log recognized properties
+            if (data.properties.Count > 0)
+            {
+                var colorProps = data.properties.Where(p => 
+                    p == DataProperty.R8 || p == DataProperty.G8 || p == DataProperty.B8 || p == DataProperty.A8 ||
+                    p == DataProperty.R16 || p == DataProperty.G16 || p == DataProperty.B16 || p == DataProperty.A16 ||
+                    p == DataProperty.R32 || p == DataProperty.G32 || p == DataProperty.B32 || p == DataProperty.A32).ToList();
+                if (colorProps.Count == 0)
+                {
+                    Debug.LogWarning("PLY Import: No color properties detected. Colors will default to white.");
+                }
+                else
+                {
+                    Debug.Log($"PLY Import: Detected {colorProps.Count} color properties: {string.Join(", ", colorProps)}");
+                }
+            }
 
-            // Rewind the stream back to the exact position of the reader.
-            reader.BaseStream.Position = readCount;
-            reader.DiscardBufferedData();
+            // For binary files, we need to ensure the stream position is correct.
+            // StreamReader buffers data, so we need to account for that.
+            if (isBinary)
+            {
+                // Discard buffered data and reset to start
+                reader.DiscardBufferedData();
+                reader.BaseStream.Position = 0;
+                
+                // Read bytes until we find "end_header\n"
+                var endHeaderBytes = Encoding.ASCII.GetBytes("end_header\n");
+                var buffer = new byte[1];
+                var matchIndex = 0;
+                var headerEndPos = 0L;
+                
+                while (reader.BaseStream.Read(buffer, 0, 1) > 0)
+                {
+                    headerEndPos = reader.BaseStream.Position;
+                    if (buffer[0] == endHeaderBytes[matchIndex])
+                    {
+                        matchIndex++;
+                        if (matchIndex == endHeaderBytes.Length)
+                        {
+                            // Found "end_header\n", position is now correct
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        matchIndex = 0;
+                        if (buffer[0] == endHeaderBytes[0])
+                            matchIndex = 1;
+                    }
+                }
+                
+                // Position is now right after "end_header\n"
+                reader.BaseStream.Position = headerEndPos;
+            }
+            else
+            {
+                // For ASCII files, the position calculation should be accurate
+                reader.BaseStream.Position = readCount;
+                reader.DiscardBufferedData();
+            }
 
             return data;
         }
@@ -432,27 +511,33 @@ namespace Pcx
 
             float x = 0, y = 0, z = 0;
             Byte r = 255, g = 255, b = 255, a = 255;
+            
+            // Track if we've read any color values
+            bool hasColorData = false;
 
             for (var i = 0; i < header.vertexCount; i++)
             {
+                // Reset to default white for each vertex (in case color properties are missing or not read)
+                r = 255; g = 255; b = 255; a = 255;
+                
                 foreach (var prop in header.properties)
                 {
                     switch (prop)
                     {
-                        case DataProperty.R8: r = reader.ReadByte(); break;
-                        case DataProperty.G8: g = reader.ReadByte(); break;
-                        case DataProperty.B8: b = reader.ReadByte(); break;
-                        case DataProperty.A8: a = reader.ReadByte(); break;
+                        case DataProperty.R8: r = reader.ReadByte(); hasColorData = true; break;
+                        case DataProperty.G8: g = reader.ReadByte(); hasColorData = true; break;
+                        case DataProperty.B8: b = reader.ReadByte(); hasColorData = true; break;
+                        case DataProperty.A8: a = reader.ReadByte(); hasColorData = true; break;
 
-                        case DataProperty.R16: r = (byte)(reader.ReadUInt16() >> 8); break;
-                        case DataProperty.G16: g = (byte)(reader.ReadUInt16() >> 8); break;
-                        case DataProperty.B16: b = (byte)(reader.ReadUInt16() >> 8); break;
-                        case DataProperty.A16: a = (byte)(reader.ReadUInt16() >> 8); break;
+                        case DataProperty.R16: r = (byte)(reader.ReadUInt16() >> 8); hasColorData = true; break;
+                        case DataProperty.G16: g = (byte)(reader.ReadUInt16() >> 8); hasColorData = true; break;
+                        case DataProperty.B16: b = (byte)(reader.ReadUInt16() >> 8); hasColorData = true; break;
+                        case DataProperty.A16: a = (byte)(reader.ReadUInt16() >> 8); hasColorData = true; break;
 
-                        case DataProperty.R32: r = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
-                        case DataProperty.G32: g = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
-                        case DataProperty.B32: b = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
-                        case DataProperty.A32: a = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
+                        case DataProperty.R32: r = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); hasColorData = true; break;
+                        case DataProperty.G32: g = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); hasColorData = true; break;
+                        case DataProperty.B32: b = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); hasColorData = true; break;
+                        case DataProperty.A32: a = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); hasColorData = true; break;
 
                         case DataProperty.SingleX: x = reader.ReadSingle(); break;
                         case DataProperty.SingleY: y = reader.ReadSingle(); break;
@@ -470,6 +555,11 @@ namespace Pcx
                 }
 
                 data.AddPoint(x, y, z, r, g, b, a);
+            }
+            
+            if (!hasColorData && header.vertexCount > 0)
+            {
+                Debug.LogWarning($"PLY Import: No color data was read from binary file. All vertices will be white.");
             }
 
             return data;
