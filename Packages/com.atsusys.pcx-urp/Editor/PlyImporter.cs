@@ -106,6 +106,7 @@ namespace Pcx
             Invalid,
             R8, G8, B8, A8,
             R16, G16, B16, A16,
+            R32, G32, B32, A32,
             SingleX, SingleY, SingleZ,
             DoubleX, DoubleY, DoubleZ,
             Data8, Data16, Data32, Data64
@@ -129,6 +130,10 @@ namespace Pcx
                 case DataProperty.G16: return 2;
                 case DataProperty.B16: return 2;
                 case DataProperty.A16: return 2;
+                case DataProperty.R32: return 4;
+                case DataProperty.G32: return 4;
+                case DataProperty.B32: return 4;
+                case DataProperty.A32: return 4;
                 case DataProperty.SingleX: return 4;
                 case DataProperty.SingleY: return 4;
                 case DataProperty.SingleZ: return 4;
@@ -333,16 +338,22 @@ namespace Pcx
                     var prop = DataProperty.Invalid;
 
                     // Parse the property name entry.
-                    switch (col[2])
-                    {
-                        case "red"  : prop = DataProperty.R8; break;
-                        case "green": prop = DataProperty.G8; break;
-                        case "blue" : prop = DataProperty.B8; break;
-                        case "alpha": prop = DataProperty.A8; break;
-                        case "x"    : prop = DataProperty.SingleX; break;
-                        case "y"    : prop = DataProperty.SingleY; break;
-                        case "z"    : prop = DataProperty.SingleZ; break;
-                    }
+                    // Support various color property name formats
+                    var propName = col[2].ToLower();
+                    if (propName == "red" || propName == "r" || propName == "diffuse_red")
+                        prop = DataProperty.R8;
+                    else if (propName == "green" || propName == "g" || propName == "diffuse_green")
+                        prop = DataProperty.G8;
+                    else if (propName == "blue" || propName == "b" || propName == "diffuse_blue")
+                        prop = DataProperty.B8;
+                    else if (propName == "alpha" || propName == "a")
+                        prop = DataProperty.A8;
+                    else if (propName == "x")
+                        prop = DataProperty.SingleX;
+                    else if (propName == "y")
+                        prop = DataProperty.SingleY;
+                    else if (propName == "z")
+                        prop = DataProperty.SingleZ;
 
                     // Check the property type.
                     if (col[1] == "char" || col[1] == "uchar" ||
@@ -372,8 +383,19 @@ namespace Pcx
                     {
                         if (prop == DataProperty.Invalid)
                             prop = DataProperty.Data32;
-                        else if (GetPropertySize(prop) != 4)
-                            throw new ArgumentException("Invalid property type ('" + line + "').");
+                        else
+                        {
+                            // Handle float color properties (0.0-1.0 range)
+                            switch (prop)
+                            {
+                                case DataProperty.R8: prop = DataProperty.R32; break;
+                                case DataProperty.G8: prop = DataProperty.G32; break;
+                                case DataProperty.B8: prop = DataProperty.B32; break;
+                                case DataProperty.A8: prop = DataProperty.A32; break;
+                            }
+                            if (GetPropertySize(prop) != 4)
+                                throw new ArgumentException("Invalid property type ('" + line + "').");
+                        }
                     }
                     else if (col[1] == "int64"  || col[1] == "uint64" ||
                              col[1] == "double" || col[1] == "float64")
@@ -426,6 +448,11 @@ namespace Pcx
                         case DataProperty.G16: g = (byte)(reader.ReadUInt16() >> 8); break;
                         case DataProperty.B16: b = (byte)(reader.ReadUInt16() >> 8); break;
                         case DataProperty.A16: a = (byte)(reader.ReadUInt16() >> 8); break;
+
+                        case DataProperty.R32: r = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
+                        case DataProperty.G32: g = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
+                        case DataProperty.B32: b = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
+                        case DataProperty.A32: a = (byte)(Mathf.Clamp01(reader.ReadSingle()) * 255f); break;
 
                         case DataProperty.SingleX: x = reader.ReadSingle(); break;
                         case DataProperty.SingleY: y = reader.ReadSingle(); break;
@@ -483,6 +510,11 @@ namespace Pcx
                         case DataProperty.G16: g = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
                         case DataProperty.B16: b = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
                         case DataProperty.A16: a = (byte)(UInt16.Parse(token, CultureInfo.InvariantCulture) >> 8); break;
+
+                        case DataProperty.R32: r = (byte)(Mathf.Clamp01(Single.Parse(token, CultureInfo.InvariantCulture)) * 255f); break;
+                        case DataProperty.G32: g = (byte)(Mathf.Clamp01(Single.Parse(token, CultureInfo.InvariantCulture)) * 255f); break;
+                        case DataProperty.B32: b = (byte)(Mathf.Clamp01(Single.Parse(token, CultureInfo.InvariantCulture)) * 255f); break;
+                        case DataProperty.A32: a = (byte)(Mathf.Clamp01(Single.Parse(token, CultureInfo.InvariantCulture)) * 255f); break;
 
                         case DataProperty.SingleX: x = Single.Parse(token, CultureInfo.InvariantCulture); break;
                         case DataProperty.SingleY: y = Single.Parse(token, CultureInfo.InvariantCulture); break;
