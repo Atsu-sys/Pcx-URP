@@ -9,7 +9,6 @@ Shader "Point Cloud/Disk URP VR"
         _Tint("Tint", Color) = (0.5, 0.5, 0.5, 1)
         _PointSize("Point Size", Float) = 0.05
         [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
-        _Rotation("Rotation", Vector) = (0, 0, 0, 0)
     }
     SubShader
     {
@@ -108,7 +107,6 @@ Shader "Point Cloud/Disk URP VR"
 
             half4 _Tint;
             half _PointSize;
-            half4 _Rotation;
 
             half3 SwapColorChannels(half3 col)
             {
@@ -127,31 +125,14 @@ Shader "Point Cloud/Disk URP VR"
                 #endif
             }
 
-            float3 RotatePoint(float3 p, float3 angles)
-            {
-                float3 rad = angles * (3.14159265359 / 180.0);
-                float3 s, c;
-                sincos(rad, s, c);
-                float3 p1 = p;
-                p1.yz = float2(p.y * c.x - p.z * s.x, p.y * s.x + p.z * c.x);
-                float3 p2 = p1;
-                p2.xz = float2(p1.x * c.y + p1.z * s.y, -p1.x * s.y + p1.z * c.y);
-                float3 p3 = p2;
-                p3.xy = float2(p2.x * c.z - p2.y * s.z, p2.x * s.z + p2.y * c.z);
-                return p3;
-            }
-
             v2f vert(appdata v)
             {
                 v2f o;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-                
-                float4 pos = v.vertex;
-                if (any(_Rotation.xyz)) pos.xyz = RotatePoint(pos.xyz, _Rotation.xyz);
 
-                o.pos = UnityObjectToClipPos(pos);
+                o.pos = UnityObjectToClipPos(v.vertex);
                 half3 col = SwapColorChannels(v.color);
                 o.color = col * _Tint.rgb * 2;
                 o.psize = _PointSize / o.pos.w * _ScreenParams.y;

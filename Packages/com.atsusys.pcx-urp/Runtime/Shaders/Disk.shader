@@ -9,7 +9,6 @@ Shader "Point Cloud/Disk URP"
         _Tint("Tint", Color) = (0.5, 0.5, 0.5, 1)
         _PointSize("Point Size", Float) = 0.05
         [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
-        _Rotation("Rotation", Vector) = (0, 0, 0, 0)
     }
     SubShader
     {

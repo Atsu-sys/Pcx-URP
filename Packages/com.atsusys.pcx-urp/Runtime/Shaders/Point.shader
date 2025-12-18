@@ -10,7 +10,6 @@ Shader "Point Cloud/Point URP"
         _PointSize("Point Size", Float) = 0.05
         [Toggle] _Distance("Apply Distance", Float) = 1
         [KeywordEnum(RGB, BGR, GBR, GRB, BRG, RBG)] _ColorOrder("Color Order", Float) = 0
-        _Rotation("Rotation", Vector) = (0, 0, 0, 0)
     }
     SubShader
     {
@@ -77,26 +76,6 @@ Shader "Point Cloud/Point URP"
                 #endif
             }
 
-            half4 _Rotation;
-
-            float3 RotatePoint(float3 p, float3 angles)
-            {
-                float3 rad = angles * (3.14159265359 / 180.0);
-                float3 s, c;
-                sincos(rad, s, c);
-                
-                // Rot X
-                float3 p1 = p;
-                p1.yz = float2(p.y * c.x - p.z * s.x, p.y * s.x + p.z * c.x);
-                // Rot Y
-                float3 p2 = p1;
-                p2.xz = float2(p1.x * c.y + p1.z * s.y, -p1.x * s.y + p1.z * c.y);
-                // Rot Z
-                float3 p3 = p2;
-                p3.xy = float2(p2.x * c.z - p2.y * s.z, p2.x * s.z + p2.y * c.z);
-                return p3;
-            }
-
         #if _COMPUTE_BUFFER
             Varyings Vertex(uint vid : SV_VertexID)
         #else
@@ -112,12 +91,6 @@ Shader "Point Cloud/Point URP"
                 half3 col = input.color;
             #endif
 
-                // Apply rotation
-                if (any(_Rotation.xyz))
-                {
-                    pos.xyz = RotatePoint(pos.xyz, _Rotation.xyz);
-                }
-                
                 // Apply color channel swap
                 col = SwapColorChannels(col);
 
